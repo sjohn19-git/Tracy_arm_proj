@@ -140,10 +140,10 @@ def plot_template_and_detections(event, detections, sta, cha):
 ######################################
 # MAIN LOOP
 ######################################
-for grp_id, fam in enumerate(party):
-    print(f"\n=== Group {grp_id} ===")
+for party_id, fam in enumerate(party):
+    print(f"\n=== Party {party_id} ===")
 
-    event = catalog[grp_id]         # one-to-one pairing
+    event = catalog[party_id]         # one-to-one pairing
     detections = random.sample(fam.detections, min(n_detections, len(fam.detections)))
     sta="S32K"
     cha="BHZ"

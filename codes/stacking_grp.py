@@ -31,7 +31,7 @@ from eqcorrscan.utils.stacking import align_traces
 
 
 thresh=0.75
-output_file = "/Users/sebinjohn/Tracy_arm/data/groups/grps_eqcor_0.75.pkl" 
+output_file = f"/Users/sebinjohn/Tracy_arm/data/groups/grps_eqcor_S32K_{thresh}.pkl" 
 
 with open(output_file, "rb") as f:
     groups = pickle.load(f)
@@ -40,6 +40,9 @@ party = Party()
 party.read('/Users/sebinjohn/Tracy_arm/data/party/non_clustered/party.tgz', read_detection_catalog=False)
 print(party)
 len(party)
+
+party.decluster(0.25)
+
 
 outdir = Path("/Users/sebinjohn/Tracy_arm/data/seismic")
 bank = WaveBank(outdir) 
@@ -151,7 +154,7 @@ def stack_waveforms(groupsf, grp_id=0,prf_stas=["S32K"],prf_cha="*H*", search_le
     print(f"\nGroup {grp_id} | {len(grp)} detections")
     stations = set()
     for st, tid in grp:
-        sta,ch= st[0].stats.station, st[0].stats.channel  
+        sta,ch= st[0].stats.station, st[0].stats.channel 
         stations.add(sta+"_"+ch)
     print(f"  Stations: {', '.join(sorted(stations))}")
     print("extraction detections from Party.....")
@@ -160,7 +163,7 @@ def stack_waveforms(groupsf, grp_id=0,prf_stas=["S32K"],prf_cha="*H*", search_le
     
     contri_fams = []
     filtered_dets = []
-    for i in tqdm(range(0, 101), desc="Filtering detections"):
+    for i in tqdm(range(0, 100), desc="Filtering detections"):
         fam = party[i]
         fam_filtered = [det for det in fam if det.id in dets]
         filtered_dets.extend(fam_filtered)
@@ -185,10 +188,14 @@ def stack_waveforms(groupsf, grp_id=0,prf_stas=["S32K"],prf_cha="*H*", search_le
     print("processing and extracting streams from all stations....")
     
     traces = []
+    detect_times=[]
 
     for detection in tqdm(selected_dets, desc="Processing detections"):
-        stt=detection.detect_time-t1
-        ett=detection.detect_time+t2
+        det_ev = detection.event
+        p_time =det_ev.origins[0].time+16.65
+        stt=p_time-t1
+        ett=p_time+t2
+        detect_times.append(p_time)
         sti=bank.get_waveforms(network="*",station=prf_stas,starttime=stt,endtime=ett)  
         sti = sti.select(channel=prf_cha)
         if filt:
@@ -333,7 +340,7 @@ aligned, shifts, corrs = align_stream(
     t1=4, t2=25,
     shift_len=900,
     fill_value=0,
-    master=18
+    master=10
 )
 
 plot_trs(aligned, plot_n=50, spacing=0.9, scale=1.0, wiggle=False, stack_tr=None,rand=False,Ns=Ns,title="Stack of detections from different groups")
@@ -347,7 +354,7 @@ prf_stas=["S32K","SIT","R32K","EDCR","S31K","U33K","PLBC"]
 
 grp_id, stacked_stream,n = stack_waveforms(
     groupsf, 
-    grp_id=11,     # <- fixed
+    grp_id=9,     # <- fixed
     prf_stas=prf_stas,
     prf_cha="*H*",
     search_len=300,
@@ -357,7 +364,7 @@ grp_id, stacked_stream,n = stack_waveforms(
     wiggle=False,
     t1=50,
     t2=130,
-    filt=True,
+    filt=False,
     spacing=0.9
 )
 
@@ -365,9 +372,9 @@ stacked_stream.write("/Users/sebinjohn/Downloads/composite.mseed", format="MSEED
 
 stacked_stream = read("/Users/sebinjohn/Downloads/composite.mseed")
 
-plot_trs(stacked_stream, plot_n=50, spacing=2, scale=1.0, wiggle=False,rand=False, stack_tr=None,title="Stack of detections from group 11 on different channels")
+plot_trs(stacked_stream, plot_n=50, spacing=2, scale=1.0, wiggle=False,rand=False, stack_tr=None,title="Stack of detections from group 9 on different channels")
 
-sp=stacked_stream.select(station="S32K").plot()
+
 
 
 #stacked_stream.plot()
